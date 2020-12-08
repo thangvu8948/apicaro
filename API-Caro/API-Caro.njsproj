@@ -33,7 +33,13 @@
     <Content Include="app\areas\admin\controller\admin.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\areas\guest\controller\guest.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\areas\user\controller\user.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="app\middlewares\Authentication.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="app\models\account.js">
@@ -64,6 +70,8 @@
     <Folder Include="app\areas\" />
     <Folder Include="app\areas\admin\" />
     <Folder Include="app\areas\admin\controller\" />
+    <Folder Include="app\areas\guest\" />
+    <Folder Include="app\areas\guest\controller\" />
     <Folder Include="app\areas\user\" />
     <Folder Include="app\areas\user\controller\" />
     <Folder Include="app\middlewares\" />

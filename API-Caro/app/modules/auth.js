@@ -1,26 +1,35 @@
 const mAccount = require('../models/account');
 const jwt = require('../utils/jwt');
-const { delete } = require('../../routes');
 exports.login = async (user_email, password) => {
     const res = await mAccount.login(user_email, password);
-    if (Boolean(res)) {
-        delete res.Password;
-        const token = await jwt.generateToken(res);
+    if (res[0]) {
+        delete res[0].Password;
+        const token = await jwt.generateToken(res[0]);
         return token;
     }
     else {
         return '';
     }
 };
+exports.auth = async (token) => {
+    const payload = await jwt.verifyToken(token);
+    const res = await mAccount.findByID(payload.ID);
+    if (res) {
+        return payload;
+    }
+    else {
+        return {};
+    }
+};
 exports.logout = () => {
    
 };
-exports.register = (user, password) => {
+exports.register =async (user, password) => {
     const entity = {
         Username: user,
         Password: password}
     const res = await mAccount.insert(entity);
-    if (Boolean(res)) {
+    if (res) {
         return true;
     }
     else {

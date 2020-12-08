@@ -7,6 +7,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
+const middlewareAuth = require('./app/middlewares/Authentication');
 var app = express();
 
 // view engine setup
@@ -21,8 +22,9 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-napp.use('/', require('./app/areas/user/controller/user'));
-app.use('/admin', require('./app/areas/admin/controller/admin'));
+app.use('/user', middlewareAuth.isUser, require('./app/areas/user/controller/user'));
+app.use('/admin', middlewareAuth.isAdmin, require('./app/areas/admin/controller/admin'));
+app.use('/', require('./app/areas/guest/controller/guest'));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

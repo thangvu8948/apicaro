@@ -8,9 +8,10 @@ var privateKEY = fs.readFileSync('./private.key', 'utf8'); // to sign JWT
 var publicKEY = fs.readFileSync('./public.key', 'utf8'); 	// to verify JWT
 //console.log(publicKEY);
 let generateToken = (payload) => {
+
     return new Promise((resolve, reject) => {
         jwt.sign(
-            payload,
+           convertToAccountObj(payload),
             privateKEY,
             {
                 algorithm: "RS256",
@@ -23,7 +24,20 @@ let generateToken = (payload) => {
             });
     });
 }
-
+function convertToAccountObj(payload) {
+    let row = {
+        ID: 0,
+        Username: "",
+        RoleID: 2,
+        Score: 0,
+        WinBattle: 0,
+        DefeatBattle: 0,
+        DrawBattle: 0,
+        Ranking: 0
+    };
+    Object.keys(row).forEach(function (prop) { row[prop] = payload[prop] })
+    return row;
+}
 
 let verifyToken = (token) => {
     return new Promise((resolve, reject) => {

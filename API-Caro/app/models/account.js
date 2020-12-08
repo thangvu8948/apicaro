@@ -1,5 +1,4 @@
 const db = require('../utils/db');
-const { delete } = require('../../routes');
 const table = 'account';
 const pKey = 'ID';
 const fKey = 'RoleID';
@@ -18,7 +17,7 @@ module.exports = {
     login: async (username,password) => {
         const sql = `SELECT  *
                      FROM ${table} t       
-                     WHERE t.Username= ${username} and t.Password= ${password}`;
+                     WHERE t.Username= '${username}' and t.Password= '${password}'`;
         const rows = await db.load(sql);
         //console.log("token:", rows);
         return rows;
