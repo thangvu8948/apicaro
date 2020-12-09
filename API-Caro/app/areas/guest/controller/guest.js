@@ -14,9 +14,14 @@ router.post('/login', async (req, res) => {
 router.post('/register', async (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body));
     //logic check
-
+    if (data.Password == data.RePassword) {
+        const s = await auth.register(data.Username, data.Password);
+        res.json(s);
+    }
+    else {
+        res.send;("Unmatching password");
+    }
     //
-    const s = await auth.register(data.Username, data.Password);
-    res.json(s);
+   
 });
 module.exports = router;
