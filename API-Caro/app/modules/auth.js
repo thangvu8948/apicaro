@@ -27,12 +27,15 @@ exports.logout = () => {
 exports.register =async (user, password) => {
     const entity = {
         Username: user,
-        Password: password}
-    const res = await mAccount.insert(entity);
-    if (res) {
-        return true;
+        Password: password
+    }
+    const flag = await mAccount.where(`Username='${user}'`);
+    if (flag[0]) {
+        return 0;
     }
     else {
-        return false;
+        const res = await mAccount.insert(entity);
+        return res;
     }
+   
 }

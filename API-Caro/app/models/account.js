@@ -14,7 +14,10 @@ let row = {
     Ranking: 0
 };
 module.exports = {
-    login: async (username,password) => {
+    sample: () => {
+        return row;
+    },
+    login: async (username, password) => {
         const sql = `SELECT  *
                      FROM ${table} t       
                      WHERE t.Username= '${username}' and t.Password= '${password}'`;
@@ -29,10 +32,17 @@ module.exports = {
         const rows = await db.load(sql);
         return rows;
     },
+    where: async (condition) => {
+        const sql = `SELECT  *
+                     FROM ${table}        
+                     WHERE ${condition}`;
+        const rows = await db.load(sql);
+        return rows;
+    },
     getAll: async () => {
         const sql = `SELECT *
                      FROM  ${table} t           
-                     WHERE t.${fKey} != 2` ;
+                     WHERE t.${fKey} != 2`;
         const rows = await db.load(sql);
         return rows;
     },
@@ -41,6 +51,7 @@ module.exports = {
         delete obj.ID;
         const id = await db.add(table, obj);
         return id;
+
     }
 
 };
