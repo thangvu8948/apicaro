@@ -7,8 +7,12 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
+const socketio = require('socket.io');
+const http = require('http');
+
 
 const middlewareAuth = require('./app/middlewares/Authentication');
+const { createServer } = require('tls');
 var app = express();
 
 app.use(cors())
@@ -58,9 +62,24 @@ app.use(function (err, req, res, next) {
         error: {}
     });
 });
+app.use(logger(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:http-version" :status :res[content-length] :response-time ms'));
 
 app.set('port', process.env.PORT || 3000);
 
-var server = app.listen(app.get('port'), function () {
-    debug('Express server listening on port ' + server.address().port);
+var server = http.createServer(app);
+global.io = socketio(server);
+
+io.on('connection', function (socket) {
+    console.log("someone connected");
+    var online = Object.keys(io.engine.clients);
+    io.emit('FromAPI', JSON.stringify(online));
+
+    socket.on('disconnect', function () {
+        console.log("someone disconnected");
+        var online = Object.keys(io.engine.clients);
+        io.emit('FromAPI', JSON.stringify(online));
+    });
 });
+
+server.listen(process.env.PORT || 3000, () => console.log('we up.'));
+
