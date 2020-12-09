@@ -5,10 +5,10 @@ exports.login = async (user_email, password) => {
     if (res[0]) {
         delete res[0].Password;
         const token = await jwt.generateToken(res[0]);
-        return token;
+        return { "token": token };
     }
     else {
-        return '';
+        return { "token": "" };
     }
 };
 exports.auth = async (token) => {

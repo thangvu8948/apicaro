@@ -8,7 +8,7 @@ router.use(express.urlencoded({ extended: false }));
 //
 router.post('/login', async (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body));
-    const s = await auth.login(data.username, data.password);
+    const s = await auth.login(data.Username, data.Password);
     res.json(s);
 });
 router.post('/register', async (req, res) => {
@@ -16,7 +16,7 @@ router.post('/register', async (req, res) => {
     //logic check
 
     //
-    const s = await auth.register(data.username, data.password);
+    const s = await auth.register(data.Username, data.Password);
     res.json(s);
 });
 module.exports = router;
