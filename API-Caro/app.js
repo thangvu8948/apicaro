@@ -67,17 +67,45 @@ app.use(logger(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:htt
 app.set('port', process.env.PORT || 3000);
 
 var server = http.createServer(app);
+var online = []
 global.io = socketio(server);
 
 io.on('connection', function (socket) {
     console.log("someone connected");
-    var online = Object.keys(io.engine.clients);
-    io.emit('FromAPI', JSON.stringify(online));
 
-    socket.on('disconnect', function () {
-        console.log("someone disconnected");
-        var online = Object.keys(io.engine.clients);
-        io.emit('FromAPI', JSON.stringify(online));
+    console.log(online);
+    //io.emit('FromAPI', JSON.stringify(online));
+    socket.on("so_connect", data => {
+        var b = online.filter((value, index) => {
+            if (value[0] === data) {
+                value[1].push(socket.id);
+                return true;
+            }
+            return false;
+        })
+
+        if (b.length === 0) {
+            online.push([data, [socket.id]])
+        }
+        socket.emit("FromAPI", JSON.stringify(online.map((value, index) => value[0])))
+
+    })
+    socket.on('disconnect', data => {
+        console.log(socket.id + " disconnected + 123");
+        var b = online.filter((value, index) => {
+            var idx = value[1].indexOf(socket.id);
+            if (idx >= 0) {
+                value[1].splice(socket.id);
+                if (value[1].length === 0) {
+                    online.splice(index, 1);
+                }
+                return true;
+            }
+            return false;
+        })
+        socket.emit('FromAPI', JSON.stringify(online));
+
+      
     });
 });
 
