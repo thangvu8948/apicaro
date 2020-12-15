@@ -48,6 +48,9 @@
     <Content Include="app\game\caro-game.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\game\caro-socket-handler.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\middlewares\Authentication.js">
       <SubType>Code</SubType>
     </Content>

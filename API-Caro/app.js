@@ -13,6 +13,8 @@ const http = require('http');
 
 const middlewareAuth = require('./app/middlewares/Authentication');
 const { createServer } = require('tls');
+const CaroGameList = require('./app/game/caro-game-list');
+const CaroGame = require('./app/game/caro-game');
 //const { delete } = require('./routes');
 var app = express();
 
@@ -71,6 +73,17 @@ var server = http.createServer(app);
 var online = {}
 global.io = socketio(server);
 
+// generate an ID:
+function generateAnId(len) {
+    var text = "";
+    var possibleChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    for (var i = 0; i < len; i++)
+        text += possibleChars.charAt(Math.floor(Math.random() * possibleChars.length));
+    return text;
+}
+
+var gameData = new CaroGameList(10, 20, generateAnId)
+
 io.on('connection', function (socket) {
     console.log("someone connected");
 
@@ -97,6 +110,52 @@ io.on('connection', function (socket) {
         console.log(online);
         io.emit("user-online", JSON.stringify(Object.keys(online)));
     }); 
+
+    socket.on("caro-game", (msg) => {
+        let msgData = JSON.parse(msg);
+        switch (msgData.type) {
+            case 'request-new-room':
+                NewRoomHandler(msgData);
+                break;
+            case 'join-room':
+                JoinRoomHandler(msgData);
+                break;
+        }
+    })
+
+    function NewRoomHandler(msgData) {
+        const player = msgData.player;
+        var game = new CaroGame(generateAnId(16), 'medium');
+        if (game) {
+            gameData.AddGame(game);
+            //game.CreatePlayer(player.Id, player.Username);
+            socket.emit('caro-game', JSON.stringify({ type: "request-new-room-result", data: { isSuccess: true, game: game } }));
+        } else {
+            socket.emit('caro-game', JSON.stringify({ type: "request-new-room-result", data: { isSuccess: false, game: game } }));
+        }
+    }
+
+    function JoinRoomHandler(msgData) {
+        const game = gameData.FindGame(msgData.data.gameId);
+        const player = msgData.data.player;
+        if (game) {
+            console.log("joined");
+            socket.emit('caro-game', JSON.stringify({ type: "you-joined" }));
+            const p = game.CreatePlayer(player.Id, player.Username);
+            p.setVar('socket', socket);
+
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                if (client !== socket) {
+                    client.emit("caro-game", JSON.stringify({ type: "player-joined", data: { player: player } }));
+                }
+            }
+        } else {
+            console.log("no-valid")
+            socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
+        }
+
+    }
 });
 
 server.listen(process.env.PORT || 3000, () => console.log('we up.'));

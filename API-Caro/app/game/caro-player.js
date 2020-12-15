@@ -1,6 +1,6 @@
 function CaroPlayer(id, name) {
-    this.id;
-    this.name;
+    this.id = id;
+    this.name = name;
     this.char = null;
     this.ready = false;
 
