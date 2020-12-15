@@ -13,6 +13,7 @@ const http = require('http');
 
 const middlewareAuth = require('./app/middlewares/Authentication');
 const { createServer } = require('tls');
+//const { delete } = require('./routes');
 var app = express();
 
 app.use(cors())
@@ -67,46 +68,35 @@ app.use(logger(':remote-addr - :remote-user [:date[clf]] ":method :url HTTP/:htt
 app.set('port', process.env.PORT || 3000);
 
 var server = http.createServer(app);
-var online = []
+var online = {}
 global.io = socketio(server);
 
 io.on('connection', function (socket) {
     console.log("someone connected");
 
-    console.log(online);
     //io.emit('FromAPI', JSON.stringify(online));
-    socket.on("so_connect", data => {
-        var b = online.filter((value, index) => {
-            if (value[0] === data) {
-                value[1].push(socket.id);
-                return true;
-            }
-            return false;
-        })
-
-        if (b.length === 0) {
-            online.push([data, [socket.id]])
+    socket.on("user-online", data => {
+        if (online[data] == null) {
+            online[data] = [socket.id];
+        } else {
+            online[data].push(socket.id);
         }
-        socket.emit("FromAPI", JSON.stringify(online.map((value, index) => value[0])))
+        console.log(online);
+        io.emit("user-online", JSON.stringify(Object.keys(online)));
 
     })
     socket.on('disconnect', data => {
-        console.log(socket.id + " disconnected + 123");
-        var b = online.filter((value, index) => {
-            var idx = value[1].indexOf(socket.id);
-            if (idx >= 0) {
-                value[1].splice(socket.id);
-                if (value[1].length === 0) {
-                    online.splice(index, 1);
+        for (const [key, value] of Object.entries(online)) {
+            if (value.indexOf(socket.id) >= 0) {
+                value.splice(value.indexOf(socket.id), 1);
+                if (value.length === 0) {
+                    delete online[key];
                 }
-                return true;
             }
-            return false;
-        })
-        socket.emit('FromAPI', JSON.stringify(online));
-
-      
-    });
+        }
+        console.log(online);
+        io.emit("user-online", JSON.stringify(Object.keys(online)));
+    }); 
 });
 
 server.listen(process.env.PORT || 3000, () => console.log('we up.'));

@@ -39,6 +39,15 @@
     <Content Include="app\areas\user\controller\user.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\game\caro-game-list.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="app\game\caro-player.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="app\game\caro-game.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\middlewares\Authentication.js">
       <SubType>Code</SubType>
     </Content>
@@ -77,6 +86,7 @@
     <Folder Include="app\middlewares\" />
     <Folder Include="app\models\" />
     <Folder Include="app\modules\" />
+    <Folder Include="app\game\" />
     <Folder Include="app\utils\" />
     <Folder Include="public\" />
     <Folder Include="public\images\" />
