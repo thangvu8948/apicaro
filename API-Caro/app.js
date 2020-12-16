@@ -126,7 +126,7 @@ io.on('connection', function (socket) {
             case 'ready':
                 ReadyHandler(msgData);
                 break;
-            case 'chat':
+            case 'send-message':
                 ChatHandler(msgData);
                 break;
             case 'left-room':
@@ -176,7 +176,21 @@ io.on('connection', function (socket) {
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
                 if (client !== socket) {
-                    client.emit("caro-game", JSON.stringify({ type: "moved", data: { board: msgData.data.board } }));
+                    client.emit("caro-game", JSON.stringify({ type: "moved", data: { board: msgData.data.board, move: msgData.data.move } }));
+                }
+            }
+        }
+    }
+
+    function ChatHandler(msgData) {
+        console.log("send message");
+        const game = gameData.FindGame(msgData.data.gameId);
+        const message = msgData.data.message;
+        if (game) {
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                if (client !== socket) {
+                    client.emit("caro-game", JSON.stringify({ type: "received-message", data: { message: message, player: game.players[i] } }));
                 }
             }
         }
