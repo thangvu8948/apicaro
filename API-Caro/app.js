@@ -109,7 +109,7 @@ io.on('connection', function (socket) {
         }
         console.log(online);
         io.emit("user-online", JSON.stringify(Object.keys(online)));
-    }); 
+    });
 
     socket.on("caro-game", (msg) => {
         let msgData = JSON.parse(msg);
@@ -119,6 +119,18 @@ io.on('connection', function (socket) {
                 break;
             case 'join-room':
                 JoinRoomHandler(msgData);
+                break;
+            case 'moving':
+                MovingHandler(msgData);
+                break;
+            case 'ready':
+                ReadyHandler(msgData);
+                break;
+            case 'send-message':
+                ChatHandler(msgData);
+                break;
+            case 'left-room':
+                LeftRoomHander(msgData);
                 break;
         }
     })
@@ -140,7 +152,7 @@ io.on('connection', function (socket) {
         const player = msgData.data.player;
         if (game) {
             console.log("joined");
-            socket.emit('caro-game', JSON.stringify({ type: "you-joined" }));
+            socket.emit('caro-game', JSON.stringify({ type: "you-joined", data: { game: game } }));
             const p = game.CreatePlayer(player.Id, player.Username);
             p.setVar('socket', socket);
 
@@ -154,7 +166,34 @@ io.on('connection', function (socket) {
             console.log("no-valid")
             socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
         }
+    }
 
+    function MovingHandler(msgData) {
+        const game = gameData.FindGame(msgData.data.gameId);
+        if (game) {
+            const player = game.FindPlayer(msgData.data.player.Id);
+            console.log("moved");
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                if (client !== socket) {
+                    client.emit("caro-game", JSON.stringify({ type: "moved", data: { board: msgData.data.board, move: msgData.data.move } }));
+                }
+            }
+        }
+    }
+
+    function ChatHandler(msgData) {
+        console.log("send message");
+        const game = gameData.FindGame(msgData.data.gameId);
+        const message = msgData.data.message;
+        if (game) {
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                if (client !== socket) {
+                    client.emit("caro-game", JSON.stringify({ type: "received-message", data: { message: message, player: game.players[i] } }));
+                }
+            }
+        }
     }
 });
 

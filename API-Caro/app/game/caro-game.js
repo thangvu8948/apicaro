@@ -17,7 +17,7 @@ function CaroGame(id, boardSizeKey) {
     this.room = -1;
 
     this.players = [];
-
+    this.readyPlayers = [];
     var _movingPlayerId = null;
     this.resetCurrentMovePlayerId = function () {
         _movingPlayerId = null;
