@@ -60,6 +60,9 @@
     <Content Include="app\modules\auth.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\modules\gameLogic.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\utils\db.js">
       <SubType>Code</SubType>
     </Content>

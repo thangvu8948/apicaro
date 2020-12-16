@@ -11,7 +11,8 @@ let row = {
     WinBattle: 0,
     DefeatBattle: 0,
     DrawBattle: 0,
-    Ranking: 0
+    Ranking: 0,
+    History:''
 };
 module.exports = {
     sample: () => {
@@ -52,6 +53,11 @@ module.exports = {
         const id = await db.add(table, obj);
         return id;
 
+    },
+    update: async (entity) => {
+        //const item = await this.findByID(entity.id);
+        //var obj = Object.assign({}, item, entity);
+        const rows = await db.update(table, pKey, entity);
+        return rows;
     }
-
 };
