@@ -33,7 +33,8 @@ function convertToAccountObj(payload) {
         WinBattle: 0,
         DefeatBattle: 0,
         DrawBattle: 0,
-        Ranking: 0
+        Ranking: 0,
+        History: ''
     };
     Object.keys(row).forEach(function (prop) { row[prop] = payload[prop] })
     return row;
