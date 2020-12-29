@@ -12,6 +12,10 @@ router.get('/', async (req, res) => {
 });
 router.get('/alluser', async (req, res) => {
     const usrs = await mAccount.getAll();
+   
+    usrs.forEach((item) => {
+        delete item.Password;
+    })
     console.log(usrs);
     res.json(usrs);
 })
