@@ -1,5 +1,6 @@
 const express = require('express');
 const { route } = require('../../../../routes');
+const mAccount = require('../../../models/account');
 const router = express.Router();
 //If the data was sent as JSON
 router.use(express.json());
@@ -9,4 +10,9 @@ router.use(express.urlencoded({ extended: false }));
 router.get('/', async (req, res) => {
     res.json("admin");
 });
+router.get('/alluser', async (req, res) => {
+    const usrs = await mAccount.getAll();
+    console.log(usrs);
+    res.json(usrs);
+})
 module.exports = router;

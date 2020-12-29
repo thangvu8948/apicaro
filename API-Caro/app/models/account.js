@@ -4,6 +4,8 @@ const pKey = 'ID';
 const fKey = 'RoleID';
 let row = {
     ID: 0,
+    SocialID: 0,
+    Email: '',
     Username: "",
     Password: "",
     RoleID: 2,
@@ -12,7 +14,8 @@ let row = {
     DefeatBattle: 0,
     DrawBattle: 0,
     Ranking: 0,
-    History:''
+    History: '',
+    IsVerified: 0
 };
 module.exports = {
     sample: () => {
@@ -43,7 +46,7 @@ module.exports = {
     getAll: async () => {
         const sql = `SELECT *
                      FROM  ${table} t           
-                     WHERE t.${fKey} != 2`;
+                     WHERE t.${fKey} = 2`;
         const rows = await db.load(sql);
         return rows;
     },

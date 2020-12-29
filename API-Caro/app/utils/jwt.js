@@ -27,6 +27,8 @@ let generateToken = (payload) => {
 function convertToAccountObj(payload) {
     let row = {
         ID: 0,
+        SocialID: 0,
+        Email: '',
         Username: "",
         RoleID: 2,
         Score: 0,
@@ -34,7 +36,8 @@ function convertToAccountObj(payload) {
         DefeatBattle: 0,
         DrawBattle: 0,
         Ranking: 0,
-        History: ''
+        History: '',
+        IsVerified: 0
     };
     Object.keys(row).forEach(function (prop) { row[prop] = payload[prop] })
     return row;

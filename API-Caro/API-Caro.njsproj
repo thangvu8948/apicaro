@@ -54,6 +54,9 @@
     <Content Include="app\middlewares\Authentication.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\middlewares\passport.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\models\account.js">
       <SubType>Code</SubType>
     </Content>
@@ -67,6 +70,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="app\utils\jwt.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="configs\auth-config.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="private.key" />
@@ -94,6 +100,7 @@
     <Folder Include="app\modules\" />
     <Folder Include="app\game\" />
     <Folder Include="app\utils\" />
+    <Folder Include="configs\" />
     <Folder Include="public\" />
     <Folder Include="public\images\" />
     <Folder Include="public\javascripts\" />
