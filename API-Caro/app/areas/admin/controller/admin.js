@@ -19,4 +19,13 @@ router.get('/alluser', async (req, res) => {
     console.log(usrs);
     res.json(usrs);
 })
+router.get('/infouser/:id', async (req, res) => {
+    const usrs = await mAccount.findByID(req.params.id);
+
+    usrs.forEach((item) => {
+        delete item.Password;
+    })
+    console.log(usrs[0]);
+    res.json(usrs[0]);
+})
 module.exports = router;

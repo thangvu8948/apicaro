@@ -1,7 +1,5 @@
 const db = require('../utils/db');
-const table = 'account';
-const reftable = 'user';
-const rekey = 'AccountID';
+const table = 'battle';
 const pKey = 'ID';
 const fKey = 'RoleID';
 let row = {
@@ -33,8 +31,7 @@ module.exports = {
     },
     findByID: async (id) => {
         const sql = `SELECT  *
-                     FROM ${table} t  join ${reftable} r
-                                      on t.${pKey}= r.${rekey} 
+                     FROM ${table} t       
                      WHERE t.${pKey}= ${id}`;
         const rows = await db.load(sql);
         return rows;
