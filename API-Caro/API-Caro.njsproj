@@ -63,6 +63,12 @@
     <Content Include="app\models\battle.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\models\conversation.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="app\models\moving.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\modules\auth.js">
       <SubType>Code</SubType>
     </Content>

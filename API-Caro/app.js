@@ -9,7 +9,10 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 const socketio = require('socket.io');
 const http = require('http');
-
+const battleM = require('./app/models/battle');
+const chatM = require('./app/models/conversation');
+const movingM = require('./app/models/moving');
+const { v4: uuidv4 } = require('uuid');
 
 const middlewareAuth = require('./app/middlewares/Authentication');
 const { createServer } = require('tls');
@@ -107,13 +110,36 @@ io.on('connection', function (socket) {
                 }
             }
         }
+        console.log(socket.id + " disconnected");
         console.log(online);
+        let games = gameData.FindGamesOfSocketId(socket.id);
+        games.forEach((game, index) => {
+            let isExist = false;
+            var player = game.FindPlayerBySocket(socket.id);
+            if (player == null) return;
+            //for (let i = 0; i < game.players.length; i++) {
+            game.players = game.players.filter((player, index) => player.getVar('socket').id != socket.id);
+            game.readyPlayers = game.readyPlayers.filter((player, index) => player.getVar('socket').id != socket.id);
+            for (let i = 0; i < game.players.length; i++) {
+                game.players[i].getVar('socket').emit('caro-game', JSON.stringify({ type: "player-left", data: { player: player, players: game.players } }));
+            }
+            if (game.IsPlaying && game.readyPlayers.length < 2) {
+                game.readyPlayers.forEach((p, i) => {
+                    EndGameHandler(game, p, player);
+                })
+            }
+            //}
+        });
         io.emit("user-online", JSON.stringify(Object.keys(online)));
     });
 
     socket.on("caro-game", (msg) => {
+
         let msgData = JSON.parse(msg);
         switch (msgData.type) {
+            case 'request-all-room':
+                RequestAllRoom(msgData);
+                break;
             case 'request-new-room':
                 NewRoomHandler(msgData);
                 break;
@@ -135,9 +161,25 @@ io.on('connection', function (socket) {
         }
     })
 
+    socket.on("caro-game-chat", (msg) => {
+        let msgData = JSON.parse(msg);
+        switch (msgData.type) {
+            case 'send-message':
+                ChatHandler(msgData);
+                break;
+        }
+    })
+
+    function RequestAllRoom(msgData) {
+        socket.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.games } }));
+    }
+
     function NewRoomHandler(msgData) {
-        const player = msgData.player;
-        var game = new CaroGame(generateAnId(16), 'medium');
+        const player = msgData.data.player;
+        const row = msgData.data.row;
+        const col = msgData.data.col;
+        const room_name = msgData.data.room_name;
+        var game = new CaroGame(generateAnId(16), row, col, room_name);
         if (game) {
             gameData.AddGame(game);
             //game.CreatePlayer(player.Id, player.Username);
@@ -151,16 +193,30 @@ io.on('connection', function (socket) {
         const game = gameData.FindGame(msgData.data.gameId);
         const player = msgData.data.player;
         if (game) {
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                if (!client.connected) {
+                    game.players.splice(i, 1);
+                }
+            }
+            if (game.FindPlayer(player.ID)) {
+                socket.emit('caro-game', JSON.stringify({ type: "player-existed" }));
+                return;
+            }
             console.log("joined");
-            socket.emit('caro-game', JSON.stringify({ type: "you-joined", data: { game: game } }));
-            const p = game.CreatePlayer(player.Id, player.Username);
+            const p = game.CreatePlayer(player.ID, player.Username);
             p.setVar('socket', socket);
+            console.log(game.players);
+            socket.emit('caro-game', JSON.stringify({ type: "you-joined", data: { game: game, players: game.players } }));
 
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
                 if (client !== socket) {
-                    client.emit("caro-game", JSON.stringify({ type: "player-joined", data: { player: player } }));
+                    client.emit("caro-game", JSON.stringify({ type: "player-joined", data: { player: player, players: game.players } }));
                 }
+            }
+            if (game.IsPlaying) {
+                socket.emit("caro-game", JSON.stringify({ type: "moved-guest", data: { board: game.square } }));
             }
         } else {
             console.log("no-valid")
@@ -171,14 +227,48 @@ io.on('connection', function (socket) {
     function MovingHandler(msgData) {
         const game = gameData.FindGame(msgData.data.gameId);
         if (game) {
-            const player = game.FindPlayer(msgData.data.player.Id);
-            console.log("moved");
-            for (let i = 0; i < game.players.length; i++) {
-                const client = game.players[i].getVar('socket');
-                if (client !== socket) {
-                    client.emit("caro-game", JSON.stringify({ type: "moved", data: { board: msgData.data.board, move: msgData.data.move } }));
+            const player = game.FindPlayer(msgData.data.player.ID);
+            const move = msgData.data.move;
+            const sign = msgData.data.sign;
+            let opp = null;
+            if (game.setMove(move, sign) != null) {
+                console.log("moved");
+                //for (let i = 0; i < game.readyPlayers.length; i++) {
+                //    if (game.read)
+                //}
+                for (let i = 0; i < game.readyPlayers.length; i++) {
+                    const client = game.readyPlayers[i].getVar('socket');
+                    if (client !== socket) {
+                        client.emit("caro-game", JSON.stringify({ type: "moved", data: { move: msgData.data.move, sign: sign, } }));
+                    }
+                }
+
+                let temp = game.readyPlayers.map(item => item.id);
+                let guests = game.players.filter(player => !temp.includes(player.id));
+                for (let i = 0; i < guests.length; i++) {
+                    const client = guests[i].getVar('socket');
+                    if (client !== socket) {
+                        client.emit("caro-game", JSON.stringify({ type: "moved-guest", data: { board: game.square } }));
+                    }
+                }
+
+                let loser = null;
+                if (game.CheckWin(move)[0] == true) {
+                    //find loser
+                    for (let i = 0; i < 2; i++) {
+                        if (game.readyPlayers[i].id != player.id) {
+                            loser = game.readyPlayers[i];
+                        }
+                    }
+                    EndGameHandler(game, player, loser);
                 }
             }
+            //for (let i = 0; i < game.players.length; i++) {
+            //    const client = game.players[i].getVar('socket');
+            //    if (client !== socket) {
+            //        client.emit("caro-game", JSON.stringify({ type: "moved", data: { board: msgData.data.board, move: msgData.data.move } }));
+            //    }
+            //}
         }
     }
 
@@ -187,13 +277,83 @@ io.on('connection', function (socket) {
         const game = gameData.FindGame(msgData.data.gameId);
         const message = msgData.data.message;
         if (game) {
+            console.log(game.players);
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
                 if (client !== socket) {
-                    client.emit("caro-game", JSON.stringify({ type: "received-message", data: { message: message, player: game.players[i] } }));
+                    client.emit("caro-game-chat", JSON.stringify({ type: "received-message", data: { message: message, player: game.players[i] } }));
                 }
             }
         }
+    }
+
+    function ReadyHandler(msgData) {
+        console.log("ready");
+        const game = gameData.FindGame(msgData.data.gameId);
+        if (game && game.readyPlayers.length < 2) {
+            let player = game.FindPlayer(msgData.data.player.ID);
+            if (player && game.readyPlayers.filter((value, index) => value.id == player.id).length === 0) {
+                player.ready = true;
+                game.AddReadyPlayer(player);
+            }
+            console.log(game.readyPlayers);
+            for (let i = 0; i < game.players.length; i++) {
+                const client = game.players[i].getVar('socket');
+                client.emit("caro-game", JSON.stringify({ type: "player-ready", data: { players: game.players } }));
+            }
+
+            if (game.readyPlayers.length == 2) {
+                console.log("game start");
+                game.StartNewGame();
+                for (let i = 0; i < game.players.length; i++) {
+                    const client = game.players[i].getVar('socket');
+                    client.emit("caro-game", JSON.stringify({ type: "game-start", data: { ball: game.readyPlayers[0] } }));
+                }
+                for (let i = 0; i < 2; i++) {
+                    const client = game.readyPlayers[i].getVar('socket');
+                    client.emit("caro-game", JSON.stringify({ type: "game-start-for-players", data: { ball: game.readyPlayers[0] } }));
+                }
+            }
+        }
+    }
+
+    function LeftRoomHandler(msg) {
+
+    }
+
+    function LeftRoomBySocket(socketid) {
+
+    }
+
+    async function EndGameHandler(game, winner, loser) {
+        const battle = {
+            WinnerID: winner.id,
+            LoserID: loser.id,
+            GUID: uuidv4(),
+            Row: game.row,
+            Col: game.col,
+            //SignOfWinner: 
+        }
+
+        //var sign = game.readyPlayers[0].id === winner.id ? "X" : "O";
+        for (let i = 0; i < game.players.length; i++) {
+            const client = game.players[i].getVar('socket');
+            client.emit("caro-game", JSON.stringify({ type: "game-end", data: { winner: winner } }));
+        }
+        console.log(game.getMoves());
+        winner.getVar('socket').emit('caro-game', JSON.stringify({ type: "win-game" }));
+        loser.getVar('socket').emit('caro-game', JSON.stringify({ type: "lose-game" }));
+
+        const insertId = await battleM.insert(battle);
+        console.log(insertId);
+        const moving = {
+            GameID: insertId,
+            Moves: JSON.stringify(game.getMoves())
+        }
+        console.log(moving);
+        await movingM.insert(moving);
+        game.EndGame();
+
     }
 });
 
