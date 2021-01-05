@@ -1,18 +1,9 @@
 const db = require('../utils/db');
-const table = 'battle';
-const pKey = 'ID';
-const fKey1 = 'WinnerID';
-const fKey2 = 'LoserID';
+const table = 'moving';
+const pKey = 'GameID';
 let row = {
-    ID: 0,
-    WinnerID: 0,
-    LoserID: 0,
-    GUID: "",
-    IsDraw: 0,
-    CreatedAt: new Date(),
-    Row: 20,
-    Col: 30,
-    SignOfWinner: "X"
+    GameID: 0,
+    Moves: "",
 };
 module.exports = {
     sample: () => {
@@ -49,7 +40,7 @@ module.exports = {
     },
     insert: async (entity) => {
         var obj = Object.assign({}, row, entity);
-        delete obj.ID;
+        //delete obj.ID;
         const id = await db.add(table, obj);
         return id;
 
