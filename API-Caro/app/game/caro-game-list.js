@@ -13,7 +13,7 @@ function CaroGameList(defaultRoomNo, maximumRoomNo, genIdFunc) {
     }
 
     for (let i = 0; i < this.defaultRoom; i++) {
-        var game = new CaroGame(this.generateIdFunc(16), 'medium');
+        var game = new CaroGame(this.generateIdFunc(16), 20, 30, "Default " + i);
         this.AddGame(game);
     }
 }
@@ -55,4 +55,18 @@ CaroGameList.prototype.AddGame = function (game) {
     }
     return null;
 };
+
+CaroGameList.prototype.FindGamesOfSocketId = function (socketid) {
+    let res = [];
+    for (let i = 0; i < this.games.length; i++) {
+        for (let j = 0; j < this.games[i].players.length; j++) {
+            if (this.games[i].players[j].getVar('socket').id == socketid) {
+                res.push(this.games[i]);
+                break;
+            }
+
+        }
+    }
+    return res;
+}
 module.exports = CaroGameList;
