@@ -74,6 +74,9 @@ function CaroGame(id, rows = 20, cols = 30, room_name) {
     this.getMoves = function () {
         return moves;
     };
+    this.getMessages = function () {
+        return this.messages;
+    }
     this.emptyMoves = function () {
         moves = [];
     };
@@ -331,5 +334,10 @@ CaroGame.prototype.EndGame = function () {
         this.players[i].ready = false;
     }
 };
+
+CaroGame.prototype.AddMessage = function (message) {
+    this.messages.push(message);
+    console.log(this.messages);
+}
 
 module.exports = CaroGame;
