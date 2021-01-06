@@ -276,7 +276,15 @@ io.on('connection', function (socket) {
         console.log("send message");
         const game = gameData.FindGame(msgData.data.gameId);
         const message = msgData.data.message;
+        const senderId = msgData.data.senderId;
+        const senderUsername = msgData.data.senderUsername;
         if (game) {
+            const messageInfo = {
+                senderId: senderId,
+                senderUsername: senderUsername,
+                message: message,
+            }
+            game.AddMessage(messageInfo);
             console.log(game.players);
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
@@ -350,8 +358,13 @@ io.on('connection', function (socket) {
             GameID: insertId,
             Moves: JSON.stringify(game.getMoves())
         }
+        const conversation = {
+            GameID: insertId,
+            Messages: JSON.stringify(game.getMessages())
+        }
         console.log(moving);
         await movingM.insert(moving);
+        await chatM.insert(conversation);
         game.EndGame();
 
     }
