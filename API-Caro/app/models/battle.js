@@ -3,6 +3,7 @@ const table = 'battle';
 const pKey = 'ID';
 const fKey1 = 'WinnerID';
 const fKey2 = 'LoserID';
+const fTable = 'account';
 let row = {
     ID: 0,
     WinnerID: 0,
@@ -33,6 +34,14 @@ module.exports = {
         const rows = await db.load(sql);
         return rows;
     },
+    findByUserID: async (uid) => {
+        const sql = `SELECT  *
+                     FROM ${table} t       
+                     WHERE t.${fKey1}= ${uid} OR t.${fKey2}=${uid}
+                     ORDER BY t.CreatedAt DESC`;
+        const rows = await db.load(sql);
+        return rows;
+    },
     where: async (condition) => {
         const sql = `SELECT  *
                      FROM ${table}        
@@ -41,9 +50,11 @@ module.exports = {
         return rows;
     },
     getAll: async () => {
-        const sql = `SELECT *
-                     FROM  ${table} t           
-                     WHERE t.${fKey} = 2`;
+        const sql = `SELECT t.* ,u1.Username as "Winner", u2.Username as "Loser"
+                     FROM  ${table} t JOIN ${fTable} u1
+                                      ON t.${fKey1}=u1.ID
+                                      JOIN  ${fTable} u2
+                                       ON t.${fKey2}=u2.ID`;
         const rows = await db.load(sql);
         return rows;
     },
