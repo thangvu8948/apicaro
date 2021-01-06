@@ -131,6 +131,7 @@ io.on('connection', function (socket) {
             //}
         });
         io.emit("user-online", JSON.stringify(Object.keys(online)));
+        socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
     });
 
     socket.on("caro-game", (msg) => {
@@ -142,6 +143,9 @@ io.on('connection', function (socket) {
                 break;
             case 'request-new-room':
                 NewRoomHandler(msgData);
+                break;
+            case 'go-to-room-by-id':
+                GotoRoomByIdHandler(msgData);
                 break;
             case 'join-room':
                 JoinRoomHandler(msgData);
@@ -179,9 +183,16 @@ io.on('connection', function (socket) {
         const row = msgData.data.row;
         const col = msgData.data.col;
         const room_name = msgData.data.room_name;
-        var game = new CaroGame(generateAnId(16), row, col, room_name);
+        const public_room = msgData.data.public;
+        const password = msgData.data.password;
+        var game = new CaroGame(generateAnId(16), row, col, room_name, public_room, password);
         if (game) {
             gameData.AddGame(game);
+            socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
+
+            if (!game.isPublic) {
+                game.approved.push(player.ID);
+            }
             //game.CreatePlayer(player.Id, player.Username);
             socket.emit('caro-game', JSON.stringify({ type: "request-new-room-result", data: { isSuccess: true, game: game } }));
         } else {
@@ -189,10 +200,43 @@ io.on('connection', function (socket) {
         }
     }
 
+    function GotoRoomByIdHandler(msgData) {
+        const roomId = msgData.data.id;
+        const password = msgData.data.password;
+        const player = msgData.data.player;
+        const game = gameData.FindGame(roomId);
+        if (game) {
+            console.log(game.password);
+            if (!game.isPublic) {
+                if (game.password !== password) {
+                    socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: false, id: roomId, errCode: 2 } }));
+                    return;
+                } else {
+                    if (!game.approved.includes(player.ID)) {
+                        game.approved.push(player.ID);
+                    }
+                    socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: true, id: roomId, errCode: 0 } }));
+                }
+            }
+            else {
+                socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: true, id: roomId, errCode: 0 } }));
+            }
+        } else {
+            socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: false, id: roomId, errCode: 1 } }));
+        }
+    }
+
     function JoinRoomHandler(msgData) {
         const game = gameData.FindGame(msgData.data.gameId);
         const player = msgData.data.player;
+        const password = msgData.data.password;
         if (game) {
+            if (!game.isPublic) {
+                if (!game.approved.includes(player.ID)) {
+                    socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
+                    return;
+                }
+            }
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
                 if (!client.connected) {
@@ -222,6 +266,8 @@ io.on('connection', function (socket) {
             console.log("no-valid")
             socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
         }
+        socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
+
     }
 
     function MovingHandler(msgData) {
@@ -323,14 +369,6 @@ io.on('connection', function (socket) {
                 }
             }
         }
-    }
-
-    function LeftRoomHandler(msg) {
-
-    }
-
-    function LeftRoomBySocket(socketid) {
-
     }
 
     async function EndGameHandler(game, winner, loser) {

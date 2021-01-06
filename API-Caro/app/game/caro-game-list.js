@@ -2,6 +2,7 @@ var CaroGame = require('./caro-game.js')
 
 function CaroGameList(defaultRoomNo, maximumRoomNo, genIdFunc) {
     this.games = [];
+    this.pendingPlayer = [];
     this.defaultRoom = defaultRoomNo;
     this.maximumRoom = maximumRoomNo;
     if (typeof (genIdFunc) === undefined) {
@@ -13,7 +14,7 @@ function CaroGameList(defaultRoomNo, maximumRoomNo, genIdFunc) {
     }
 
     for (let i = 0; i < this.defaultRoom; i++) {
-        var game = new CaroGame(this.generateIdFunc(16), 20, 30, "Default " + i);
+        var game = new CaroGame(this.generateIdFunc(16), 20, 30, "Default " + (i+1), true, "");
         this.AddGame(game);
     }
 }
@@ -68,5 +69,9 @@ CaroGameList.prototype.FindGamesOfSocketId = function (socketid) {
         }
     }
     return res;
+}
+
+CaroGameList.prototype.AllPublicGames = function () {
+    return this.games.filter((game, index) => game.isPublic == true);
 }
 module.exports = CaroGameList;
