@@ -1,8 +1,8 @@
 const express = require('express');
-const { route } = require('../../../../routes');
 const mAccount = require('../../../models/account');
 const mBattle = require('../../../models/battle');
 const mMoving = require('../../../models/moving');
+const mChat = require('../../../models/conversation');
 const router = express.Router();
 //If the data was sent as JSON
 router.use(express.json());
@@ -37,6 +37,7 @@ router.get('/users/:id/recentfive', async (req, res) => {
 })
 router.get('/users/:id/battles', async (req, res) => {
     const bt = await mBattle.findByUserID(req.params.id);
+    console.log(bt);
     res.json(bt);
 })
 router.get('/allbattles', async (req, res) => {
@@ -46,5 +47,9 @@ router.get('/allbattles', async (req, res) => {
 router.get('/battles/:id/moves', async (req, res) => {
     const mv = await mMoving.findByID(req.params.id);
     res.json(mv[0]);
+})
+router.get('/battles/:id/chat', async (req, res) => {
+    const chat = await mChat.findByID(req.params.id);
+    res.json(chat[0]);
 })
 module.exports = router;

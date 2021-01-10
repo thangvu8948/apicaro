@@ -35,8 +35,11 @@ module.exports = {
         return rows;
     },
     findByUserID: async (uid) => {
-        const sql = `SELECT  *
-                     FROM ${table} t       
+        const sql = `SELECT  t.* ,u1.Username as "Winner", u2.Username as "Loser"
+                     FROM ${table} t JOIN ${fTable} u1
+                                      ON t.${fKey1}=u1.ID
+                                      JOIN  ${fTable} u2
+                                       ON t.${fKey2}=u2.ID  
                      WHERE t.${fKey1}= ${uid} OR t.${fKey2}=${uid}
                      ORDER BY t.CreatedAt DESC`;
         const rows = await db.load(sql);

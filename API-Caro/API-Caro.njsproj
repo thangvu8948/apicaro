@@ -81,6 +81,9 @@
     <Content Include="app\utils\jwt.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\utils\webrequest.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="configs\auth-config.js">
       <SubType>Code</SubType>
     </Content>
