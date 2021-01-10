@@ -85,7 +85,7 @@ function generateAnId(len) {
     return text;
 }
 
-var gameData = new CaroGameList(10, 20, generateAnId)
+var gameData = new CaroGameList(10, 100, generateAnId)
 
 io.on('connection', function (socket) {
     console.log("someone connected");
@@ -99,7 +99,6 @@ io.on('connection', function (socket) {
         }
         console.log(online);
         io.emit("user-online", JSON.stringify(Object.keys(online)));
-
     })
     socket.on('disconnect', data => {
         for (const [key, value] of Object.entries(online)) {
@@ -128,9 +127,17 @@ io.on('connection', function (socket) {
                     EndGameHandler(game, p, player);
                 })
             }
+
+            if (game.players.length === 0 && !game.IsDefault) {
+                gameData.RemoveGame(game);
+                console.log("remove game");
+            }
+
+
             //}
         });
         io.emit("user-online", JSON.stringify(Object.keys(online)));
+        socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
     });
 
     socket.on("caro-game", (msg) => {
@@ -142,6 +149,9 @@ io.on('connection', function (socket) {
                 break;
             case 'request-new-room':
                 NewRoomHandler(msgData);
+                break;
+            case 'go-to-room-by-id':
+                GotoRoomByIdHandler(msgData);
                 break;
             case 'join-room':
                 JoinRoomHandler(msgData);
@@ -170,6 +180,30 @@ io.on('connection', function (socket) {
         }
     })
 
+    socket.on("invite-game", (msg) => {
+        let msgData = JSON.parse(msg);
+        switch (msgData.type) {
+            case "invite-by-id":
+                InviteHandler(msgData);
+                break;
+            case "accept":
+                AcceptInviteHandler(msgData);
+                break;
+            case "denied":
+                DeniedInviteHandler(msgData);
+                break;
+        }
+    })
+
+    socket.on("quick-game", (msg) => {
+        let msgData = JSON.parse(msg);
+        switch (msgData.type) {
+            case "find-game":
+                QGFindGameHandler(msgData);
+                break;
+        }
+    })
+
     function RequestAllRoom(msgData) {
         socket.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.games } }));
     }
@@ -179,9 +213,16 @@ io.on('connection', function (socket) {
         const row = msgData.data.row;
         const col = msgData.data.col;
         const room_name = msgData.data.room_name;
-        var game = new CaroGame(generateAnId(16), row, col, room_name);
+        const public_room = msgData.data.public;
+        const password = msgData.data.password;
+        var game = new CaroGame(generateAnId(16), row, col, room_name, public_room, password);
         if (game) {
             gameData.AddGame(game);
+            socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
+
+            if (!game.isPublic) {
+                game.approved.push(player.ID);
+            }
             //game.CreatePlayer(player.Id, player.Username);
             socket.emit('caro-game', JSON.stringify({ type: "request-new-room-result", data: { isSuccess: true, game: game } }));
         } else {
@@ -189,10 +230,43 @@ io.on('connection', function (socket) {
         }
     }
 
+    function GotoRoomByIdHandler(msgData) {
+        const roomId = msgData.data.id;
+        const password = msgData.data.password;
+        const player = msgData.data.player;
+        const game = gameData.FindGame(roomId);
+        if (game) {
+            console.log(game.password);
+            if (!game.isPublic) {
+                if (game.password !== password) {
+                    socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: false, id: roomId, errCode: 2 } }));
+                    return;
+                } else {
+                    if (!game.approved.includes(player.ID)) {
+                        game.approved.push(player.ID);
+                    }
+                    socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: true, id: roomId, errCode: 0 } }));
+                }
+            }
+            else {
+                socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: true, id: roomId, errCode: 0 } }));
+            }
+        } else {
+            socket.emit('caro-game', JSON.stringify({ type: "response-join-room-by-id", data: { isSuccess: false, id: roomId, errCode: 1 } }));
+        }
+    }
+
     function JoinRoomHandler(msgData) {
         const game = gameData.FindGame(msgData.data.gameId);
         const player = msgData.data.player;
+        const password = msgData.data.password;
         if (game) {
+            if (!game.isPublic) {
+                if (!game.approved.includes(player.ID)) {
+                    socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
+                    return;
+                }
+            }
             for (let i = 0; i < game.players.length; i++) {
                 const client = game.players[i].getVar('socket');
                 if (!client.connected) {
@@ -200,6 +274,7 @@ io.on('connection', function (socket) {
                 }
             }
             if (game.FindPlayer(player.ID)) {
+                console.log("existed");
                 socket.emit('caro-game', JSON.stringify({ type: "player-existed" }));
                 return;
             }
@@ -222,6 +297,8 @@ io.on('connection', function (socket) {
             console.log("no-valid")
             socket.emit('caro-game', JSON.stringify({ type: "room-no-valid" }));
         }
+        socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
+
     }
 
     function MovingHandler(msgData) {
@@ -321,16 +398,9 @@ io.on('connection', function (socket) {
                     const client = game.readyPlayers[i].getVar('socket');
                     client.emit("caro-game", JSON.stringify({ type: "game-start-for-players", data: { ball: game.readyPlayers[0] } }));
                 }
+                socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
             }
         }
-    }
-
-    function LeftRoomHandler(msg) {
-
-    }
-
-    function LeftRoomBySocket(socketid) {
-
     }
 
     async function EndGameHandler(game, winner, loser) {
@@ -366,7 +436,53 @@ io.on('connection', function (socket) {
         await movingM.insert(moving);
         await chatM.insert(conversation);
         game.EndGame();
+        socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
 
+    }
+
+    function InviteHandler(msgData) {
+        const person = msgData.data.id;
+        const sender = msgData.data.sender;
+
+        if (online[person]) {
+            console.log("exist to invite");
+            online[person].forEach((sk, idx) => {
+                io.to(sk).emit('invite-game', JSON.stringify({ type: "invite-to-game", data: { sender: sender, senderSK: socket.id } }));
+            })
+        }
+    }
+
+    function AcceptInviteHandler(msgData) {
+        console.log("accepted");
+        const sourceSK = msgData.data.sourceSK;
+        const user = msgData.data.user;
+
+        var game = new CaroGame(generateAnId(16), 20, 30, "Unnamed Room", true, "");
+        if (game) {
+            gameData.AddGame(game);
+            io.to(sourceSK).emit("invite-game", JSON.stringify({ type: "invite-accepted", data: { roomId: game.id } }));
+            socket.emit("invite-game", JSON.stringify({ type: "invite-accepted", data: { roomId: game.id } }));
+        }
+
+    }
+
+    function DeniedInviteHandler(msgData) {
+        const sourceSK = msgData.data.sourceSK;
+        const user = msgData.data.user;
+        io.to(sourceSK).emit("invite-game", JSON.stringify({ type: "invite-denied", data: { user: user, sk: socket.id } }));
+    }
+
+    function QGFindGameHandler(msgData) {
+        const user = msgData.data.user;
+        const op = gameData.MatchingPlayer(user.ID, user.Username, socket);
+        if (op) {
+            var game = new CaroGame(generateAnId(16), 20, 30, "Unnamed Room", true, "");
+            if (game) {
+                gameData.AddGame(game);
+                op.getVar('socket').emit("invite-game", JSON.stringify({ type: "invite-accepted", data: { roomId: game.id } }));
+                socket.emit("invite-game", JSON.stringify({ type: "invite-accepted", data: { roomId: game.id } }));
+            }
+        }
     }
 });
 

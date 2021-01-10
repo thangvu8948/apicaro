@@ -1,7 +1,9 @@
-var CaroGame = require('./caro-game.js')
+var CaroGame = require('./caro-game.js');
+const CaroPlayer = require('./caro-player.js');
 
 function CaroGameList(defaultRoomNo, maximumRoomNo, genIdFunc) {
     this.games = [];
+    this.pendingPlayer = [];
     this.defaultRoom = defaultRoomNo;
     this.maximumRoom = maximumRoomNo;
     if (typeof (genIdFunc) === undefined) {
@@ -13,8 +15,44 @@ function CaroGameList(defaultRoomNo, maximumRoomNo, genIdFunc) {
     }
 
     for (let i = 0; i < this.defaultRoom; i++) {
-        var game = new CaroGame(this.generateIdFunc(16), 20, 30, "Default " + i);
+        var game = new CaroGame(this.generateIdFunc(16), 20, 30, "Default " + (i+1), true, "", true);
         this.AddGame(game);
+    }
+
+}
+
+CaroGameList.prototype.AddPendingPlayer = function (player) {
+    this.pendingPlayer.push(player);
+}
+
+CaroGameList.prototype.GetAndRemoveOnePendingPlayer = function (player) {
+    let p = null;
+    for (let i = 0; i < this.pendingPlayer.length; i++) {
+        if (this.pendingPlayer[i].id !== player.id && this.pendingPlayer[i].getVar('socket').id !== player.getVar('socket').id) {
+            p = this.pendingPlayer[i];
+            this.pendingPlayer.splice(i, 1);
+            return p;
+        }
+    }
+    return null;
+}
+
+CaroGameList.prototype.MatchingPlayer = function (id, name, socket) {
+    var player = new CaroPlayer(id, name);
+    player.setVar('socket', socket);
+    var matchPlayer = this.GetAndRemoveOnePendingPlayer(player);
+    if (matchPlayer === null) {
+        this.AddPendingPlayer(player);
+    } else {
+    }
+    return matchPlayer;
+}
+
+CaroGameList.prototype.RemovePendingPlayerBySocket = function (socketid) {
+    for (let i = 0; i < this.pendingPlayer.length; i++) {
+        if (this.pendingPlayer[i].getVar('socket').id === socketid) {
+            this.pendingPlayer.splice(i, 1);
+        }
     }
 }
 
@@ -68,5 +106,9 @@ CaroGameList.prototype.FindGamesOfSocketId = function (socketid) {
         }
     }
     return res;
+}
+
+CaroGameList.prototype.AllPublicGames = function () {
+    return this.games.filter((game, index) => game.isPublic == true);
 }
 module.exports = CaroGameList;

@@ -1,6 +1,6 @@
 const CaroPlayer = require('./caro-player.js');
 
-function CaroGame(id, rows = 20, cols = 30, room_name) {
+function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefault = false) {
     function getBoardSize(key) {
         switch (key) {
             case 'small':
@@ -20,13 +20,17 @@ function CaroGame(id, rows = 20, cols = 30, room_name) {
     this.room = -1;
     this.col = cols;
     this.row = rows;
+    this.isPublic = public;
+    this.password = password;
     this.square = new Array(rows * cols).fill(null);
     this.players = [];
+    this.approved = [];
     this.readyPlayers = [];
     this.guests = [];
     this.board = [];
     this.messages = [];
     this.IsPlaying = false;
+    this.IsDefault = isDefault;
     var _movingPlayerId = null;
     this.resetCurrentMovePlayerId = function () {
         _movingPlayerId = null;
