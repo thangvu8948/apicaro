@@ -30,6 +30,11 @@ router.get('/infouser/:id', async (req, res) => {
     console.log(usrs[0]);
     res.json(usrs[0]);
 })
+router.get('/users/:id/banned/:status', async (req, res) => {
+    const bt = await mAccount.update({ ID: req.params.id, IsBanned: req.params.status });
+    console.log(bt);
+    res.json(bt);
+})
 router.get('/users/:id/recentfive', async (req, res) => {
     const fives = await mBattle.findByUserID(req.params.id);
     console.log(fives.slice(0,5));
@@ -40,6 +45,7 @@ router.get('/users/:id/battles', async (req, res) => {
     console.log(bt);
     res.json(bt);
 })
+
 router.get('/allbattles', async (req, res) => {
     const bt = await mBattle.getAll();
     res.json(bt);

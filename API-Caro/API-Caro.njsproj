@@ -69,10 +69,16 @@
     <Content Include="app\models\moving.js">
       <SubType>Code</SubType>
     </Content>
+    <Content Include="app\models\user.js">
+      <SubType>Code</SubType>
+    </Content>
     <Content Include="app\modules\auth.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="app\modules\gameLogic.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="app\modules\Mail.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="app\utils\db.js">
