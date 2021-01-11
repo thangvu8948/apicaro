@@ -23,6 +23,14 @@ module.exports = {
         const rows = await db.load(sql);
         return rows;
     },
+    findByAccountID: async (id) => {
+        const sql = `SELECT  *
+                     FROM ${table} t 
+                     WHERE t.${fkey}= ${id}`;
+        const rows = await db.load(sql);
+        return rows;
+    }
+    ,
     where: async (condition) => {
         const sql = `SELECT  *
                      FROM ${table}        

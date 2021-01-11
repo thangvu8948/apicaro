@@ -1,6 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const mUser = require('../../../models/user');
+const mAccount = require('../../../models/account');
+const mBattle = require('../../../models/battle');
+const mChat = require('../../../models/conversation');
+const mMoving = require('../../../models/moving');
+const { route } = require('../../../../routes');
 //If the data was sent as JSON
 router.use(express.json());
 //If the data was sent using Content-Type: application/x-www-form-urlencoded
@@ -45,4 +50,13 @@ router.get('/battles/:id/chat', async (req, res) => {
 router.get("/auth", (req, res) => {
      res.json(true);
 });
+router.get('/account/:id', async (req, res) => {
+    const usrs = await mUser.findByAccountID(req.params.id);
+
+    usrs.forEach((item) => {
+        delete item.Password;
+    })
+    console.log(usrs[0]);
+    res.json(usrs[0]);
+})
 module.exports = router;
