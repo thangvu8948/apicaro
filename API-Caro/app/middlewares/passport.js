@@ -1,6 +1,6 @@
 const passport = require('passport');
 const FacebookStrategy = require('passport-facebook').Strategy;
-
+var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 // L?y thông tin nh?ng giá tr? auth
 const configAuth = require('../../configs/auth-config');
 
@@ -8,6 +8,18 @@ const configAuth = require('../../configs/auth-config');
 const mAccount = require('../models/account');
 
 module.exports = function (passport) {
+    //// used to serialize the user for the session
+    //passport.serializeUser(function (user, done) {
+    //    done(null, user.id);
+    //});
+
+    //// used to deserialize the user
+    //passport.deserializeUser(function (id, done) {
+    //    mAccount.findByID(id, function (err, user) {
+    //        delete user[0].Password;
+    //        done(err, user[0]);
+    //    });
+    //});
 
     // =========================================================================
     // FACEBOOK ================================================================
@@ -24,21 +36,23 @@ module.exports = function (passport) {
         // Facebook s? g?i l?i chu?i token và thông tin profile c?a user
         async (token, refreshToken, profile, done) => {
             try {
-                const user = await mAccount.where(`SocialID=${profile.ID}`);
+                const user = await mAccount.where(`SocialID=${profile.id}`);
                 if (user[0]) {
                     return done(null, user[0]);
                 }
                 else {
                     const entity = {
-                        SocialID: profile.ID,
+                        SocialID: profile.id,
                         Email: profile.emails[0].value,
-                        IsVerify: 1,
-                        Username: profile.name.givenName + (profile.ID+ '').slice(-3),
-                        Password: refreshToken
+                        IsVerified: 1,
+                        Username: profile.name.givenName + (profile.id+ '').slice(-3),
+                        Password: ''
                     }
-                    const res = await mAccount.insert(entity);
-                    const newUser = await mAccount.findByID(res);
-                    return done(null, newUser);
+                    const inserted = await mAccount.insert(entity);
+                    console.log(inserted)
+                    const newUser = await mAccount.getByID(inserted);
+                    console.log("passport f",newUser);
+                    return done(null, newUser[0]);
                 }
             } catch (e) {
                 return done(e);
@@ -46,5 +60,38 @@ module.exports = function (passport) {
            
 
         }));
+    // =========================================================================
+    // GOOGLE ==================================================================
+    // =========================================================================
+    passport.use(new GoogleStrategy({
 
+        clientID: configAuth.googleAuth.clientID,
+        clientSecret: configAuth.googleAuth.clientSecret,
+        callbackURL: configAuth.googleAuth.callbackURL,
+
+    },
+        async (token, refreshToken, profile, done)=> {
+            try {
+                const user = await mAccount.where(`SocialID=${profile.id}`);
+                if (user[0]) {
+                    return done(null, user[0]);
+                }
+                else {
+                    const entity = {
+                        SocialID: profile.id,
+                        Email: profile.emails[0].value,
+                        IsVerified: 1,
+                        Username: profile.emails[0].value.split('@')[0] + (profile.id + '').slice(-3),
+                        Password: ''
+                    }
+                    const inserted = await mAccount.insert(entity);
+                    console.log(inserted);
+                    const newUser = await mAccount.getByID(inserted);
+                    return done(null, newUser[0]);
+                }
+            } catch (e) {
+                return done(e);
+            }
+
+        }));
 };

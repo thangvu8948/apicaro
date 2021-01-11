@@ -3,7 +3,7 @@ const auth = require('../modules/auth');
 module.exports = {
     isAdmin: async (req, res, next) => {
         try {
-            const token = req.header('Authorization').replace('Bearer ', '')
+            const token = req.header('Authorization').replace('Bearer ', '');
             const ok = await auth.auth(token);
             if (ok.RoleID == 1) {
                 next();
@@ -18,7 +18,7 @@ module.exports = {
     },
     isUser: async (req, res, next) => {
         try {
-            const token = req.header('Authorization').replace('Bearer ', '')
+            const token = req.header('Authorization').replace('Bearer ', '');
             const ok = await auth.auth(token);
             if (ok.RoleID == 2) {
                 next();

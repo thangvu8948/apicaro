@@ -39,6 +39,13 @@ module.exports = {
         const rows = await db.load(sql);
         return rows;
     },
+    getByID: async (id) => {
+        const sql = `SELECT  *
+                     FROM ${table} t
+                     WHERE t.${pKey}= ${id}`;
+        const rows = await db.load(sql);
+        return rows;
+    },
     where: async (condition) => {
         const sql = `SELECT  *
                      FROM ${table}        
@@ -56,6 +63,7 @@ module.exports = {
     insert: async (entity) => {
         var obj = Object.assign({}, row, entity);
         delete obj.ID;
+        console.log(obj);
         const id = await db.add(table, obj);
         return id;
 

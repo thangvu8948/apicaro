@@ -42,4 +42,7 @@ router.get('/battles/:id/chat', async (req, res) => {
     const chat = await mChat.findByID(req.params.id);
     res.json(chat[0]);
 })
+router.get("/auth", (req, res) => {
+     res.json(true);
+});
 module.exports = router;

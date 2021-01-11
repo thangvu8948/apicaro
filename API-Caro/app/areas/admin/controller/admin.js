@@ -18,31 +18,30 @@ router.get('/alluser', async (req, res) => {
     usrs.forEach((item) => {
         delete item.Password;
     })
-    console.log(usrs);
     res.json(usrs);
 })
 router.get('/infouser/:id', async (req, res) => {
     const usrs = await mAccount.findByID(req.params.id);
 
-    usrs.forEach((item) => {
-        delete item.Password;
-    })
-    console.log(usrs[0]);
+    //usrs.forEach((item) => {
+    //    delete item.Password;
+    //})
+    delete usrs[0].Password;
+    delete usrs[0].RoleID;
+    delete usrs[0].History;
     res.json(usrs[0]);
+    
 })
 router.get('/users/:id/banned/:status', async (req, res) => {
     const bt = await mAccount.update({ ID: req.params.id, IsBanned: req.params.status });
-    console.log(bt);
     res.json(bt);
 })
 router.get('/users/:id/recentfive', async (req, res) => {
     const fives = await mBattle.findByUserID(req.params.id);
-    console.log(fives.slice(0,5));
     res.json(fives.slice(0, 5));
 })
 router.get('/users/:id/battles', async (req, res) => {
     const bt = await mBattle.findByUserID(req.params.id);
-    console.log(bt);
     res.json(bt);
 })
 
