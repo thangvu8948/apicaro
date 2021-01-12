@@ -111,6 +111,11 @@ io.on('connection', function (socket) {
         }
         console.log(socket.id + " disconnected");
         console.log(online);
+        gameData.pendingPlayer.forEach((p, i) => {
+            if (p.getVar('socket').id === socket.id) {
+                gameData.pendingPlayer.splice(i, 1);
+            }
+        })
         let games = gameData.FindGamesOfSocketId(socket.id);
         games.forEach((game, index) => {
             let isExist = false;
@@ -132,7 +137,6 @@ io.on('connection', function (socket) {
                 gameData.RemoveGame(game);
                 console.log("remove game");
             }
-
 
             //}
         });
@@ -168,6 +172,15 @@ io.on('connection', function (socket) {
             case 'left-room':
                 LeftRoomHander(msgData);
                 break;
+            case "request-draw":
+                RequestDrawHandler(msgData);
+                break;
+            case "accept-draw":
+                AcceptDrawHandler(msgData);
+                break;
+            case "denied-draw":
+                DeniedDrawHandler(msgData);
+                break;
         }
     })
 
@@ -200,6 +213,9 @@ io.on('connection', function (socket) {
         switch (msgData.type) {
             case "find-game":
                 QGFindGameHandler(msgData);
+                break;
+            case "cancel":
+                QGCancelHandler(msgData);
                 break;
         }
     })
@@ -403,22 +419,26 @@ io.on('connection', function (socket) {
         }
     }
 
-    async function EndGameHandler(game, winner, loser) {
+    async function EndGameHandler(game, winner, loser, isDraw = false) {
         const battle = {
             WinnerID: winner.id,
             LoserID: loser.id,
             GUID: uuidv4(),
             Row: game.row,
             Col: game.col,
+
             //SignOfWinner: 
         }
 
         //var sign = game.readyPlayers[0].id === winner.id ? "X" : "O";
+        game.players.forEach((p, i) => {
+            p.ready = false;
+        })
+        console.log(game.winRow);
         for (let i = 0; i < game.players.length; i++) {
             const client = game.players[i].getVar('socket');
-            client.emit("caro-game", JSON.stringify({ type: "game-end", data: { winner: winner } }));
+            client.emit("caro-game", JSON.stringify({ type: "game-end", data: { winner: winner, players: game.players, winRow: game.winRow } }));
         }
-        console.log(game.getMoves());
         winner.getVar('socket').emit('caro-game', JSON.stringify({ type: "win-game" }));
         loser.getVar('socket').emit('caro-game', JSON.stringify({ type: "lose-game" }));
 
@@ -436,8 +456,52 @@ io.on('connection', function (socket) {
         await movingM.insert(moving);
         await chatM.insert(conversation);
         game.EndGame();
+        for (let i = 0; i < game.players.length; i++) {
+            const client = game.players[i].getVar('socket');
+            client.emit("caro-game", JSON.stringify({ type: "saved-game", data: { } }));
+        }
         socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
 
+    }
+
+    function RequestDrawHandler(msgData) {
+        const gameId = msgData.data.gameId;
+        const player = msgData.data.player;
+        const game = gameData.FindGame(gameId);
+        if (game) {
+            const opp = game.readyPlayers.filter((p, i) => p.id !== player.ID)[0];
+            opp.getVar('socket').emit("caro-game", JSON.stringify({
+                type: "draw-request",
+                data: { player: player }
+            }));
+        }
+
+    }
+
+    function AcceptDrawHandler(msgData) {
+        const gameId = msgData.data.gameId;
+        const player = msgData.data.player;
+        const game = gameData.FindGame(gameId);
+        if (game) {
+            const opp = game.readyPlayers.filter((p, i) => p.id !== player.ID)[0];
+            opp.getVar('socket').emit("caro-game", JSON.stringify({
+                type: "draw-accepted",
+                data: { player: player }
+            }));
+        }
+    }
+
+    function DeniedDrawHandler(msgData) {
+        const gameId = msgData.data.gameId;
+        const player = msgData.data.player;
+        const game = gameData.FindGame(gameId);
+        if (game) {
+            const opp = game.readyPlayers.filter((p, i) => p.id !== player.ID)[0];
+            opp.getVar('socket').emit("caro-game", JSON.stringify({
+                type: "draw-denied",
+                data: { player: player }
+            }));
+        }
     }
 
     function InviteHandler(msgData) {
@@ -483,6 +547,13 @@ io.on('connection', function (socket) {
                 socket.emit("invite-game", JSON.stringify({ type: "invite-accepted", data: { roomId: game.id } }));
             }
         }
+
+        console.log(gameData.pendingPlayer);
+    }
+
+    function QGCancelHandler(msgData) {
+        gameData.RemovePendingPlayerBySocket(socket.id);
+        console.log(gameData.pendingPlayer);
     }
 });
 

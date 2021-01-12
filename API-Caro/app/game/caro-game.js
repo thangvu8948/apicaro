@@ -86,7 +86,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
     };
 
     this.created = new Date().getTime();
-
+    this.winRow = [];
     function listToMatrix(list, elementsPerSubArray) {
         var matrix = [],
             i,
@@ -118,6 +118,8 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         return [false, square[just]];
     };
     this.isHorizontalCheck = function (square, i, j) {
+        this.winRow = [];
+        this.winRow.push(i*this.col + j);
         let col = this.col;
         //int di = 0;
         let dj = -1; // Di qua trai
@@ -128,6 +130,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         while (startJ + dj >= 0) {
             startJ += dj; // Di qua trai
             if (square[i][j] == square[i][startJ]) {
+                this.winRow.push(i * this.col + startJ);
                 // Tang bien dem
                 countLeft++;
             } else {
@@ -141,14 +144,18 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         while (startJ + dj < col) {
             startJ += dj; // Di qua phai
             if (square[i][j] == square[i][startJ]) {
+                this.winRow.push(i * this.col + startJ);
                 // Tang bien dem
                 countRight++;
             } else {
                 break;
             }
         }
-
-        return countLeft + countRight >= 5;
+        if (countLeft + countRight >= 5) {
+            console.log(this.winRow);
+            return true;
+        } 
+        return false;
     }
 
     this.isVerticalCheck = function (square, i, j) {
