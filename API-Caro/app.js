@@ -12,12 +12,14 @@ const http = require('http');
 const battleM = require('./app/models/battle');
 const chatM = require('./app/models/conversation');
 const movingM = require('./app/models/moving');
+const mAccount = require('./app/models/account');
 const { v4: uuidv4 } = require('uuid');
 
 const middlewareAuth = require('./app/middlewares/Authentication');
 const { createServer } = require('tls');
 const CaroGameList = require('./app/game/caro-game-list');
 const CaroGame = require('./app/game/caro-game');
+const { log } = require('util');
 //const { delete } = require('./routes');
 var app = express();
 
@@ -100,7 +102,7 @@ io.on('connection', function (socket) {
         console.log(online);
         io.emit("user-online", JSON.stringify(Object.keys(online)));
     })
-    socket.on('disconnect', data => {
+    socket.on('disconnect', (data) => {
         for (const [key, value] of Object.entries(online)) {
             if (value.indexOf(socket.id) >= 0) {
                 value.splice(value.indexOf(socket.id), 1);
@@ -117,10 +119,14 @@ io.on('connection', function (socket) {
             }
         })
         let games = gameData.FindGamesOfSocketId(socket.id);
-        games.forEach((game, index) => {
+        for (let game of games) {
             let isExist = false;
             var player = game.FindPlayerBySocket(socket.id);
             if (player == null) return;
+            var sign = "";
+            if (game.readyPlayers.length > 0) {
+                sign = game.readyPlayers[0].getVar('socket').id == socket.id ? "O" : "X";
+            }
             //for (let i = 0; i < game.players.length; i++) {
             game.players = game.players.filter((player, index) => player.getVar('socket').id != socket.id);
             game.readyPlayers = game.readyPlayers.filter((player, index) => player.getVar('socket').id != socket.id);
@@ -129,7 +135,7 @@ io.on('connection', function (socket) {
             }
             if (game.IsPlaying && game.readyPlayers.length < 2) {
                 game.readyPlayers.forEach((p, i) => {
-                    EndGameHandler(game, p, player);
+                    EndGameHandler(game, p, player, sign);
                 })
             }
 
@@ -139,7 +145,7 @@ io.on('connection', function (socket) {
             }
 
             //}
-        });
+        }
         io.emit("user-online", JSON.stringify(Object.keys(online)));
         socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
     });
@@ -317,7 +323,7 @@ io.on('connection', function (socket) {
 
     }
 
-    function MovingHandler(msgData) {
+    async function MovingHandler(msgData) {
         const game = gameData.FindGame(msgData.data.gameId);
         if (game) {
             const player = game.FindPlayer(msgData.data.player.ID);
@@ -353,7 +359,7 @@ io.on('connection', function (socket) {
                             loser = game.readyPlayers[i];
                         }
                     }
-                    EndGameHandler(game, player, loser);
+                    await EndGameHandler(game, player, loser, sign);
                 }
             }
             //for (let i = 0; i < game.players.length; i++) {
@@ -419,15 +425,15 @@ io.on('connection', function (socket) {
         }
     }
 
-    async function EndGameHandler(game, winner, loser, isDraw = false) {
+    async function EndGameHandler(game, winner, loser, sign, isDraw = false, fullboard = false) {
         const battle = {
             WinnerID: winner.id,
             LoserID: loser.id,
             GUID: uuidv4(),
             Row: game.row,
             Col: game.col,
-
-            //SignOfWinner: 
+            IsDraw: isDraw ? 1 : 0,
+            SignOfWinner: sign
         }
 
         //var sign = game.readyPlayers[0].id === winner.id ? "X" : "O";
@@ -437,10 +443,9 @@ io.on('connection', function (socket) {
         console.log(game.winRow);
         for (let i = 0; i < game.players.length; i++) {
             const client = game.players[i].getVar('socket');
-            client.emit("caro-game", JSON.stringify({ type: "game-end", data: { winner: winner, players: game.players, winRow: game.winRow } }));
+            client.emit("caro-game", JSON.stringify({ type: "game-end", data: { winner: winner, players: game.players, winRow: game.winRow.length == 5 ? game.winRow : [] } }));
         }
-        winner.getVar('socket').emit('caro-game', JSON.stringify({ type: "win-game" }));
-        loser.getVar('socket').emit('caro-game', JSON.stringify({ type: "lose-game" }));
+
 
         const insertId = await battleM.insert(battle);
         console.log(insertId);
@@ -455,11 +460,56 @@ io.on('connection', function (socket) {
         console.log(moving);
         await movingM.insert(moving);
         await chatM.insert(conversation);
+
+        const winA = await mAccount.getByID(winner.id);
+        const loseA = await mAccount.getByID(loser.id);
+        const win = winA[0];
+        const lose = loseA[0];
+        let pointPlus = 5;
+        let pointMinus = 3;
+        if (!isDraw) {
+            if (win.Score - lose.Score < -10) {
+                pointPlus += Math.abs(Math.ceil((win.Score - lose.Score)/3));
+                pointMinus += Math.abs(Math.ceil((win.Score - lose.Score) / 3));
+            }
+
+            pointMinus = Math.min(pointMinus, lose.Score)
+        } else if (fullboard) {
+            pointPlus = 1;
+            pointMinus = -1;
+        } else {
+            pointPlus = 1;
+            pointMinus = 1;
+        }
+
+
+        win.Score += pointPlus;
+        win.WinBattle += 1;
+
+        lose.Score -= pointMinus;
+        lose.DefeatBattle += 1;
+
+        await mAccount.update(win);
+        await mAccount.update(lose);
+        //var obj = Object.assign({}, item, entity);
+        console.log("aa");
+        console.log(win);
+        console.log(lose);
         game.EndGame();
         for (let i = 0; i < game.players.length; i++) {
             const client = game.players[i].getVar('socket');
-            client.emit("caro-game", JSON.stringify({ type: "saved-game", data: { } }));
+            client.emit("caro-game", JSON.stringify({ type: "saved-game", data: {} }));
         }
+
+        if (!isDraw) {
+            winner.getVar('socket').emit('caro-game', JSON.stringify({ type: "win-game", data: { message: `You win this game.\n +${pointPlus} points`, point: pointPlus } }));
+            loser.getVar('socket').emit('caro-game', JSON.stringify({ type: "lose-game", data: { message: `Ooops, You lose this game.\n -${pointMinus} points`, point: pointMinus } }));
+        } else {
+            winner.getVar('socket').emit('caro-game', JSON.stringify({ type: "draw-game", data: { message: `Draw game.\n +${pointPlus} points`, point: pointPlus } }));
+            loser.getVar('socket').emit('caro-game', JSON.stringify({ type: "draw-game", data: { message: `Draw game.\n ${pointMinus < 0 ? "+" : "-"}${Math.abs(pointMinus)} points`, point: pointMinus } }));
+        }
+
+
         socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
 
     }
@@ -478,16 +528,20 @@ io.on('connection', function (socket) {
 
     }
 
-    function AcceptDrawHandler(msgData) {
+    async function AcceptDrawHandler(msgData) {
         const gameId = msgData.data.gameId;
         const player = msgData.data.player;
         const game = gameData.FindGame(gameId);
         if (game) {
             const opp = game.readyPlayers.filter((p, i) => p.id !== player.ID)[0];
+            const p = game.readyPlayers.filter((p, i) => p.id == player.ID)[0];
+            const sign = game.readyPlayers[0].id == player.ID ? "X" : "0";
             opp.getVar('socket').emit("caro-game", JSON.stringify({
                 type: "draw-accepted",
                 data: { player: player }
             }));
+
+            await EndGameHandler(game, p, opp, sign, true);
         }
     }
 

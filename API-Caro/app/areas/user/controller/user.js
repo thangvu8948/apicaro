@@ -19,6 +19,13 @@ router.post('/:id/avatar', async (req, res) => {
     const re = await mUser.update({ ID: req.params.id, Avatar: data.avatar });
     res.json(re);
 });
+router.post('/:id/profile', async (req, res) => {
+    const data = JSON.parse(JSON.stringify(req.body));
+    console.log(data);
+    const re = await mUser.update({ ID: req.params.id, Name: data.Name, DOB: data.DOB, Gender: data.Gender });
+    const re2 = await mAccount.update({ ID: data.ID, Email: data.Email });
+    res.json(re);
+});
 router.get('/:id/info', async (req, res) => {
     const usrs = await mAccount.findByID(req.params.id);
 

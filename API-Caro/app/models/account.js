@@ -17,7 +17,8 @@ let row = {
     DrawBattle: 0,
     Ranking: 0,
     History: '',
-    IsVerified: 0
+    IsVerified: 0,
+    IsBanned: 0,
 };
 module.exports = {
     sample: () => {

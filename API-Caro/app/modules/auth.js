@@ -2,7 +2,7 @@ const mAccount = require('../models/account');
 const jwt = require('../utils/jwt');
 exports.login = async (user_email, password) => {
     const res = await mAccount.login(user_email, password);
-    if (res[0]) {
+    if (res[0] && res[0].IsBanned == 0) {
         delete res[0].Password;
         if (res[0].IsVerified == 1) {
             const token = await jwt.generateToken(res[0]);
@@ -19,8 +19,8 @@ exports.login = async (user_email, password) => {
 exports.auth = async (token) => {
     const payload = await jwt.verifyToken(token);
     const res = await mAccount.findByID(payload.ID);
-    if (res) {
-        return payload;
+    if (res && res[0]) {
+        return res[0];
     }
     else {
         return {};

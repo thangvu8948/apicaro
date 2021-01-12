@@ -151,14 +151,12 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
                 break;
             }
         }
-        if (countLeft + countRight >= 5) {
-            console.log(this.winRow);
-            return true;
-        } 
-        return false;
+        return countLeft + countRight >= 5;
     }
 
     this.isVerticalCheck = function (square, i, j) {
+        this.winRow = [];
+        this.winRow.push(i * this.col + j);
         let row = this.row;
         let di = -1;
         let startI = i;
@@ -167,6 +165,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         while (startI + di >= 0) {
             startI += di; // Di len
             if (square[i][j] == square[startI][j]) {
+                this.winRow.push(startI * this.col + j);
                 // Tang bien dem
                 countTop++;
             } else {
@@ -180,6 +179,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         while (startI + di < row) {
             startI += di; // Di xuong
             if (square[i][j] == square[startI][j]) {
+                this.winRow.push(startI * this.col + j);
                 // Tang bien dem
                 countDown++;
             } else {
@@ -190,7 +190,9 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
         return countTop + countDown >= 5;
     }
 
-    this.isPrimaryDiagCheck = function(square, i, j) {
+    this.isPrimaryDiagCheck = function (square, i, j) {
+        this.winRow = [];
+        this.winRow.push(i * this.col + j);
         let col = this.col;
         let row = this.row;
         let di = -1;
@@ -203,6 +205,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di; // Di len
             startJ += dj; // ?i qua trái
             if (square[startI][startJ] == square[i][j]) {
+                this.winRow.push(startI * this.col + startJ);
                 // Tang bien dem
                 countTop++;
             } else {
@@ -219,6 +222,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di; // Di xuong
             startJ += dj; // ?i qua ph?i
             if (square[startI][startJ] == square[i][j]) {
+                this.winRow.push(startI * this.col + startI);
                 // Tang bien dem
                 countDown++;
             } else {
@@ -230,6 +234,8 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
     }
 
     this.isSubDiagCheck = function (square, i, j) {
+        this.winRow = [];
+        this.winRow.push(i * this.col + j);
         let col = this.col;
         let row = this.row;
         let di = -1;
@@ -242,6 +248,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di;
             startJ += dj;
             if (square[startI][startJ] == square[i][j]) {
+                this.winRow.push(startI * this.col + startI);
                 // Tang bien dem
                 countTop++;
             } else {
@@ -258,6 +265,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di;
             startJ += dj;
             if (square[startI][startJ] == square[i][j]) {
+                this.winRow.push(startI * this.col + startI);
                 // Tang bien dem
                 countDown++;
             } else {
@@ -349,6 +357,9 @@ CaroGame.prototype.EndGame = function () {
 CaroGame.prototype.AddMessage = function (message) {
     this.messages.push(message);
     console.log(this.messages);
-}
+};
 
+CaroGame.prototype.CheckFullBoard = function () {
+    return this.square.filter((v, i) => v).length === 0;
+}
 module.exports = CaroGame;
