@@ -41,7 +41,7 @@ module.exports = {
                                       JOIN  ${fTable} u2
                                        ON t.${fKey2}=u2.ID  
                      WHERE t.${fKey1}= ${uid} OR t.${fKey2}=${uid}
-                     ORDER BY t.CreatedAt DESC`;
+                     ORDER BY t.ID DESC`;
         const rows = await db.load(sql);
         return rows;
     },
