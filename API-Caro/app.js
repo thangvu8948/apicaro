@@ -505,12 +505,16 @@ io.on('connection', function (socket) {
             pointMinus = 1;
         }
 
-
         win.Score += pointPlus;
-        win.WinBattle += 1;
-
         lose.Score -= pointMinus;
-        lose.DefeatBattle += 1;
+
+        if (!isDraw) {
+            win.WinBattle += 1;
+            lose.DefeatBattle += 1;
+        } else {
+            win.DrawBattle += 1;
+            lose.DrawBattle += 1;
+        }
 
         await mAccount.update(win);
         await mAccount.update(lose);

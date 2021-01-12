@@ -6,7 +6,7 @@ const configAuth = require('../../configs/auth-config');
 
 // load  user model
 const mAccount = require('../models/account');
-
+const mUser = require('../models/user');
 module.exports = function (passport) {
     //// used to serialize the user for the session
     //passport.serializeUser(function (user, done) {
@@ -30,7 +30,7 @@ module.exports = function (passport) {
         clientID: configAuth.facebookAuth.clientID,
         clientSecret: configAuth.facebookAuth.clientSecret,
         callbackURL: configAuth.facebookAuth.callbackURL,
-        profileFields: ['id', 'displayName', 'email', 'first_name', 'last_name', 'middle_name']
+        profileFields: ['id', 'displayName', 'email', 'gender', 'picture.type(large)','first_name', 'last_name', 'middle_name']
     },
 
         // Facebook s? g?i l?i chu?i token và thông tin profile c?a user
@@ -49,9 +49,17 @@ module.exports = function (passport) {
                         Password: ''
                     }
                     const inserted = await mAccount.insert(entity);
-                    console.log(inserted)
+                    console.log(inserted);
+                    const userEntity = {
+                        AccountID: inserted,
+                        Name: profile.displayName,
+                        Avatar: profile.photos[0] ? profile.photos[0].value : "",
+                    }
+                    await mUser.insert(userEntity);
                     const newUser = await mAccount.getByID(inserted);
-                    console.log("passport f",newUser);
+                    console.log("passport f", newUser);
+                    console.log("profile");
+                    console.log(profile);
                     return done(null, newUser[0]);
                 }
             } catch (e) {
@@ -85,7 +93,15 @@ module.exports = function (passport) {
                         Password: ''
                     }
                     const inserted = await mAccount.insert(entity);
+                    const userEntity = {
+                        AccountID: inserted,
+                        Name: profile._json.name,
+                        Avatar: profile._json.picture,
+                    }
+                    await mUser.insert(userEntity);
                     console.log(inserted);
+                    console.log("profile");
+                    console.log(profile);
                     const newUser = await mAccount.getByID(inserted);
                     return done(null, newUser[0]);
                 }

@@ -53,7 +53,11 @@ router.get('/:id/battles', async (req, res) => {
     console.log(bt);
     res.json(bt);
 })
-
+router.get('/:id/battle', async (req, res) => {
+    const bt = await mBattle.findByID(req.params.id);
+    console.log(bt);
+    res.json(bt);
+})
 router.get('/battles/:id/moves', async (req, res) => {
     const mv = await mMoving.findByID(req.params.id);
     res.json(mv[0]);
