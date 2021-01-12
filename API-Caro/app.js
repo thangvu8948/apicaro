@@ -187,6 +187,12 @@ io.on('connection', function (socket) {
             case "denied-draw":
                 DeniedDrawHandler(msgData);
                 break;
+            case "move-timeout": 
+                MoveTimeoutHandler(msgData);
+                break;
+            case "withdraw":
+                WithdrawHandler(msgData);
+                break;
         }
     })
 
@@ -425,6 +431,23 @@ io.on('connection', function (socket) {
         }
     }
 
+    function MoveTimeoutHandler(msgData) {
+        const gameId = msgData.data.gameId;
+        const game = gameData.FindGame(gameId);
+        if (game) {
+            let winner = null, loser = null, sign = "";
+            for (let i = 0; i < 2; i++) {
+                if (game.readyPlayers[i].getVar('socket').id == socket.id) {
+                    loser = game.readyPlayers[i];
+                } else {
+                    winner = game.readyPlayers[i];
+                    sign = i == 0 ? "X" : "O";
+                }
+            }
+            EndGameHandler(game, winner, loser, sign);
+        }
+    }
+
     async function EndGameHandler(game, winner, loser, sign, isDraw = false, fullboard = false) {
         const battle = {
             WinnerID: winner.id,
@@ -512,6 +535,10 @@ io.on('connection', function (socket) {
 
         socket.broadcast.emit('caro-game', JSON.stringify({ type: "response-all-room", data: { games: gameData.AllPublicGames() } }));
 
+    }
+
+    function WithdrawHandler(msgData) {
+        MoveTimeoutHandler(msgData);
     }
 
     function RequestDrawHandler(msgData) {
