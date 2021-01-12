@@ -2,9 +2,12 @@ const express = require('express');
 const auth = require('../../../modules/auth');
 const jwt = require('../../../utils/jwt');
 const gameLogic = require('../../../modules/gameLogic');
+const Mail = require('../../../modules/mailtransport');
 const router = express.Router();
-const FRONTEND_HOST ="http://localhost:3000"
+const FRONTEND_HOST = "http://localhost:3000";
+const timelife = 10;
 const passport = require('passport');
+const { log } = require('debug');
 require('../../../middlewares/passport')(passport); // pass passport for configuration
 //If the data was sent as JSON
 router.use(express.json());
@@ -16,6 +19,8 @@ router.use(express.urlencoded({ extended: false }));
 router.get('/', async (req, res) => {
     res.json("hello");
 });
+
+
 router.post('/login', async (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body));
     const s = await auth.login(data.Username, data.Password);
@@ -54,12 +59,61 @@ router.get("/auth/google/callback", passport.authenticate("google", {
         res.redirect(FRONTEND_HOST + `/splash/${token}`);
     }
 );
+router.get('/verify/:code', async (req, res) => {
+    const str = atob(req.params.code);
+    const value = str.split('|');
+    const start = Number(value[0]);
+    const now = Date.now();
+    console.log((now - start) / 1000 / 60 );
+    if ((now - start) / 1000 / 60 < 10) {
+        await auth.verifyEmail(Number(value[1]));
+        res.redirect(FRONTEND_HOST);
+    } else {
+        res.redirect(FRONTEND_HOST + `/notify/y${req.params.code}`);
+    }
+});
+router.post('/resend/:id', async (req, res) => {
+    const data = JSON.parse(JSON.stringify(req.body));
+    const rand = Date.now() + "|" + req.params.id+ '|'+ data.email;
+    host = req.get('host');
+    link = "http://" + req.get('host') + "/verify/" +  btoa(rand);
+    mailOptions = {
+        to: data.email,
+        subject: "Please confirm your Email account",
+        html: `Hello,<br> Please Click on the link to verify your email within ${timelife} .<br><a href=` + link + ">Click here to verify</a>"
+    }
+    console.log(mailOptions);
+    const check= Mail.send(mailOptions);
+    res.json(check);
+});
+router.get('/didsend/:data', async (req, res) => {
+    res.redirect(FRONTEND_HOST + `/notify/x${req.params.data}`);
+})
 router.post('/register', async (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body));
     //logic check
+    console.log(data);
     if (data.Password == data.RePassword) {
-        const s = await auth.register(data.Username, data.Password);
-        res.json(s);
+        const s = await auth.register(data.newuser, data.newpass, data.email);
+        if (Boolean(s)) {
+            const rand = Date.now() + "|" + s + "|" + data.email ;
+            host = req.get('host');
+            link = "http://" + req.get('host') + "/verify/" + btoa(rand);
+            mailOptions = {
+                to: data.email,
+                subject: "Please confirm your Email account",
+                html: `Hello,<br> Please Click on the link to verify your email within ${timelife} .<br><a href=` + link + ">Click here to verify</a>"
+            }
+            const ok =await Mail.send(mailOptions);
+            if (ok) {
+            //res.redirect(`/didsend/x${btoa(rand)}`);
+                res.json(`x${btoa(rand)}`);
+            }
+        }
+        else {
+            res.json(-1);
+        }
+        
     }
     else {
         res.send;("Unmatching password");
@@ -67,4 +121,10 @@ router.post('/register', async (req, res) => {
     //
    
 });
+function btoa(str) {
+    return Buffer.from(str).toString('base64');
+}
+function atob(b64Encoded) {
+    return Buffer.from(b64Encoded, 'base64').toString();
+}
 module.exports = router;

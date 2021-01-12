@@ -20,7 +20,7 @@ module.exports = {
         try {
             const token = req.header('Authorization').replace('Bearer ', '');
             const ok = await auth.auth(token);
-            if (ok.RoleID == 2) {
+            if (ok.RoleID == 2 && ok.Verified==1) {
                 next();
             }
             else {
