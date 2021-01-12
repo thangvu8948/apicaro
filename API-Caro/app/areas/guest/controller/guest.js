@@ -83,8 +83,14 @@ router.post('/resend/:id', async (req, res) => {
         html: `Hello,<br> Please Click on the link to verify your email within ${timelife} .<br><a href=` + link + ">Click here to verify</a>"
     }
     console.log(mailOptions);
-    const check= Mail.send(mailOptions);
-    res.json(check);
+    const ok = await Mail.send(mailOptions);
+    if (ok) {
+        //res.redirect(`/didsend/x${btoa(rand)}`);
+        res.json(true);
+    }
+    else {
+        res.json(false);
+    }
 });
 router.get('/didsend/:data', async (req, res) => {
     res.redirect(FRONTEND_HOST + `/notify/x${req.params.data}`);
