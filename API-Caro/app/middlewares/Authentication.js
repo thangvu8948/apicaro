@@ -19,8 +19,9 @@ module.exports = {
     isUser: async (req, res, next) => {
         try {
             const token = req.header('Authorization').replace('Bearer ', '');
-            const ok = await auth.auth(token);
-            if (ok.RoleID == 2 && ok.Verified==1) {
+            const ok = await auth.auth(token.slice(1, -1));
+            console.log(ok);
+            if (ok.RoleID == 2 && ok.IsBanned == 0) {
                 next();
             }
             else {
