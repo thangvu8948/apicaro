@@ -78,9 +78,7 @@
     <Content Include="app\modules\gameLogic.js">
       <SubType>Code</SubType>
     </Content>
-    <Content Include="app\modules\mailtransport.js">
-      <SubType>Code</SubType>
-    </Content>
+    <Content Include="app\modules\mailtransport.js" />
     <Content Include="app\utils\db.js">
       <SubType>Code</SubType>
     </Content>
@@ -91,6 +89,9 @@
       <SubType>Code</SubType>
     </Content>
     <Content Include="configs\auth-config.js">
+      <SubType>Code</SubType>
+    </Content>
+    <Content Include="configs\passport.js">
       <SubType>Code</SubType>
     </Content>
     <Content Include="private.key" />

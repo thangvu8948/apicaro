@@ -35,6 +35,14 @@ router.get('/:id/info', async (req, res) => {
     console.log(usrs[0]);
     res.json(usrs[0]);
 })
+router.get('/alluser', async (req, res) => {
+    let usrs = await mAccount.getAll();
+    usrs = usrs.filter((u, i) => u.IsBanned === 0);
+    usrs.forEach((item) => {
+        delete item.Password;
+    })
+    res.json(usrs);
+});
 router.get('/:id/recentfive', async (req, res) => {
     const fives = await mBattle.findByUserID(req.params.id);
     console.log(fives.slice(0, 5));
