@@ -222,7 +222,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di; // Di xuong
             startJ += dj; // ?i qua ph?i
             if (square[startI][startJ] == square[i][j]) {
-                this.winRow.push(startI * this.col + startI);
+                this.winRow.push(startI * this.col + startJ);
                 // Tang bien dem
                 countDown++;
             } else {
@@ -248,7 +248,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di;
             startJ += dj;
             if (square[startI][startJ] == square[i][j]) {
-                this.winRow.push(startI * this.col + startI);
+                this.winRow.push(startI * this.col + startJ);
                 // Tang bien dem
                 countTop++;
             } else {
@@ -265,7 +265,7 @@ function CaroGame(id, rows = 20, cols = 30, room_name, public, password, isDefau
             startI += di;
             startJ += dj;
             if (square[startI][startJ] == square[i][j]) {
-                this.winRow.push(startI * this.col + startI);
+                this.winRow.push(startI * this.col + startJ);
                 // Tang bien dem
                 countDown++;
             } else {
