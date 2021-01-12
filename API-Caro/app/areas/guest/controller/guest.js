@@ -5,7 +5,7 @@ const gameLogic = require('../../../modules/gameLogic');
 const Mail = require('../../../modules/mailtransport');
 const mAccount = require('../../../models/account');
 const router = express.Router();
-const FRONTEND_HOST = "https://simple-caro.herokuapp.com/";
+const FRONTEND_HOST = "https://simple-caro.herokuapp.com";
 const timelife = 10;
 const passport = require('passport');
 require('../../../middlewares/passport')(passport); // pass passport for configuration
