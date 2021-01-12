@@ -3,11 +3,11 @@ const auth = require('../../../modules/auth');
 const jwt = require('../../../utils/jwt');
 const gameLogic = require('../../../modules/gameLogic');
 const Mail = require('../../../modules/mailtransport');
+const mAccount = require('../../../models/account');
 const router = express.Router();
 const FRONTEND_HOST = "http://localhost:3000";
 const timelife = 10;
 const passport = require('passport');
-const { log } = require('debug');
 require('../../../middlewares/passport')(passport); // pass passport for configuration
 //If the data was sent as JSON
 router.use(express.json());
@@ -70,6 +70,49 @@ router.get('/verify/:code', async (req, res) => {
         res.redirect(FRONTEND_HOST);
     } else {
         res.redirect(FRONTEND_HOST + `/notify/y${req.params.code}`);
+    }
+});
+router.post('/forgotpass', async (req, res) => {
+    const data = JSON.parse(JSON.stringify(req.body));
+    console.log(data);
+    const accs = await mAccount.where(`Email='${data.email}' and SocialID=0`);
+    const acc = accs[0];
+    if (acc) {
+        host = req.get('host');
+        link = "http://" + req.get('host') + "/forgotpassword/" + btoa(acc.ID + '|' + acc.Email);
+        mailOptions = {
+            to: data.email,
+            subject: "Forgot Password",
+            html: `Hello,<br> Please Click on the link to take password within ${timelife} .<br><a href=` + link + ">Click here</a>"
+        }
+        console.log(mailOptions);
+        const ok = await Mail.send(mailOptions);
+        if (ok) {
+            //res.redirect(`/didsend/x${btoa(rand)}`);
+            res.json(true);
+        }
+        else {
+            res.json(false);
+        }
+    }
+    else{
+        res.json(false);
+    }
+  
+
+});
+router.get('/forgotpassword/:code', async (req, res) => {
+    res.redirect(FRONTEND_HOST + `/changepassword/${req.params.code}`);
+});
+router.post('/changepassword/:id', async (req, res) => {
+    const data = JSON.parse(JSON.stringify(req.body));
+    console.log(data);
+    const o = await mAccount.update({ ID: req.params.id, Password: data.newpass })
+    if (o) {
+        res.json(true);
+    }
+    else {
+        res.json(false);
     }
 });
 router.post('/resend/:id', async (req, res) => {

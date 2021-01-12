@@ -34,7 +34,7 @@ module.exports = {
     },
     findByID: async (id) => {
         const sql = `SELECT  *
-                     FROM ${table} t  join ${reftable} r
+                     FROM ${table} t left join ${reftable} r
                                       on t.${pKey}= r.${rekey} 
                      WHERE t.${pKey}= ${id}`;
         const rows = await db.load(sql);
