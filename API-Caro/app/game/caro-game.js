@@ -346,7 +346,8 @@ CaroGame.prototype.EndGame = function () {
     this.IsPlaying = false;
     this.square = this.square.fill(null);
     this.emptyMoves();
-    this.messages = []; 
+    this.messages = [];
+    this.winRow = [];
     //this.resetCurrentMovePlayerId();
     for (var i = 0; i < this.players.length; i++) {
         //this.players[i].char = null;
