@@ -6,6 +6,8 @@ const Mail = require('../../../modules/mailtransport');
 const mAccount = require('../../../models/account');
 const router = express.Router();
 const FRONTEND_HOST = "https://simple-caro.herokuapp.com";
+//const FRONTEND_HOST = "http://127.0.0.1:3000";
+
 const timelife = 10;
 const passport = require('passport');
 require('../../../middlewares/passport')(passport); // pass passport for configuration
@@ -79,7 +81,7 @@ router.post('/forgotpass', async (req, res) => {
     const acc = accs[0];
     if (acc) {
         host = req.get('host');
-        link = "http://" + req.get('host') + "/forgotpassword/" + btoa(acc.ID + '|' + acc.Email);
+        link = "https://" + req.get('host') + "/forgotpassword/" + btoa(acc.ID + '|' + acc.Email);
         mailOptions = {
             to: data.email,
             subject: "Forgot Password",
@@ -119,7 +121,7 @@ router.post('/resend/:id', async (req, res) => {
     const data = JSON.parse(JSON.stringify(req.body));
     const rand = Date.now() + "|" + req.params.id+ '|'+ data.email;
     host = req.get('host');
-    link = "http://" + req.get('host') + "/verify/" +  btoa(rand);
+    link = "https://" + req.get('host') + "/verify/" +  btoa(rand);
     mailOptions = {
         to: data.email,
         subject: "Please confirm your Email account",
@@ -145,18 +147,20 @@ router.post('/register', async (req, res) => {
     if (data.Password == data.RePassword) {
         const s = await auth.register(data.newuser, data.newpass, data.email);
         if (Boolean(s)) {
-            const rand = Date.now() + "|" + s + "|" + data.email ;
+            const rand = Date.now() + "|" + s + "|" + data.email;
             host = req.get('host');
-            link = "http://" + req.get('host') + "/verify/" + btoa(rand);
+            link = "https://" + req.get('host') + "/verify/" + btoa(rand);
             mailOptions = {
                 to: data.email,
                 subject: "Please confirm your Email account",
                 html: `Hello,<br> Please Click on the link to verify your email within ${timelife} .<br><a href=` + link + ">Click here to verify</a>"
             }
-            const ok =await Mail.send(mailOptions);
+            const ok = await Mail.send(mailOptions);
             if (ok) {
-            //res.redirect(`/didsend/x${btoa(rand)}`);
+                //res.redirect(`/didsend/x${btoa(rand)}`);
                 res.json(`x${btoa(rand)}`);
+            } else {
+                res.send("Send mail failed");
             }
         }
         else {
@@ -165,7 +169,7 @@ router.post('/register', async (req, res) => {
         
     }
     else {
-        res.send;("Unmatching password");
+        res.send("Unmatching password");
     }
     //
    
